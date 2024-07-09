@@ -13,57 +13,65 @@ import {
 } from "@/components/atoms/dialog";
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
-import { Textarea } from "../atoms/text-area";
+import { Textarea } from "@/components/atoms/text-area";
+import { useIndexNetwork } from "@/hooks/use-index-network";
+import { promptTemplate } from "@/utils/ai";
 
 const NewFlow = () => {
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [description, setDescription] = useState("");
-  const [index, setIndex] = useState("");
-  const [symbol, setSymbol] = useState("");
-  const [tokenName, setTokenName] = useState("");
-  const [quorum, setQuorum] = useState("");
+  const [interest, setInterest] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const { createConversation, addMessage, conversationsQuery } =
+    useIndexNetwork();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // if (!primaryWallet) {
-    //   toast.error("Please connect your wallet first.");
-    //   setIsSubmitting(false);
-    //   return;
-    // }
-
-    // const connector = primaryWallet?.connector;
-
-    // if (!connector) {
-    //   toast.error("Wallet connector not found.");
-    //   setIsSubmitting(false);
-    //   return;
-    // }
-
-    if (!name || !symbol || !tokenName || !quorum) {
+    if (!name || !interest || !description) {
       toast.error("Please fill in all required fields.");
       setIsSubmitting(false);
       return;
     }
 
     try {
-      // await connector.connect();
-      // const signer = await connector.getSigner();
-
-      // if (!signer) {
-      //   throw new Error("Failed to get signer");
-      // }
+      const result = await createConversation.mutateAsync({
+        summary: JSON.stringify({
+          name,
+          logoUrl,
+          description,
+          app: "farlensflow",
+        }),
+        sources: [
+          "did:pkh:eip155:1:0x524C889CE68dcaF3830694415EdE91508681D104",
+        ],
+        members: [
+          "did:key:z6MkmvBmZitP8GKFrscX1PgpGA7X5Mw3nX1EWcC2Xrx4FST8",
+          "did:key:z6MkmFfvAAMgh2zd6kscS73b6yyJFDNRr8h4EU7AhWnQtcXc",
+        ],
+      });
 
       toast.success("Details sent. Waiting for confirmation...");
 
-      // Here you would typically call a function to create the collective
-      // using the form data and signer
-      // For example: await createFlow(name, logoUrl, description, symbol, tokenName, quorum, signer);
+      await addMessage.mutateAsync({
+        conversationId: result.id,
+        role: "user",
+        content: promptTemplate(interest),
+      });
+
+      conversationsQuery.refetch();
 
       toast.success("Flow created successfully!");
+
+      setOpen(false);
+      setName("");
+      setLogoUrl("");
+      setDescription("");
+      setInterest("");
     } catch (error) {
       console.error("Error creating collective:", error);
       toast.error(
@@ -77,7 +85,7 @@ const NewFlow = () => {
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <div className="flex justify-end">
         <DialogTrigger asChild>
           <Button
@@ -112,16 +120,16 @@ const NewFlow = () => {
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description (optional)"
+                placeholder="Description"
               />
             </div>
 
             <div className="space-y-2">
               <Label>Indexer</Label>
               <Textarea
-                value={index}
-                onChange={(e) => setIndex(e.target.value)}
-                placeholder="Describe a topic you want to fund"
+                value={interest}
+                onChange={(e) => setInterest(e.target.value)}
+                placeholder="Describe an interest on farcaster you'd love to fund"
               />
             </div>
           </div>
