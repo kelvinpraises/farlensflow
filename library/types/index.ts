@@ -11,11 +11,12 @@ export interface CustomSIWEConfig extends Omit<SIWEConfig, "getSession"> {
   getSession: () => Promise<SIWESession | null>;
 }
 
-export interface AcceptedToken {
-  address: string;
-  name: string;
+export type Token = {
   symbol: string;
-}
+  name: string;
+  address: string;
+  amount?: string;
+};
 
 export interface FundingFlow {
   id: string;
@@ -55,4 +56,42 @@ export interface FundRecipient {
     | "Rejected"
     | "Appealed"
     | "InReview";
+}
+
+// services/index-network.ts
+
+export interface Conversation {
+  id: string;
+  controllerDID: {
+    id: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  members: Array<{ id: string }>;
+  messages: Array<{
+    id: string;
+    controllerDID: {
+      id: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+    role: string;
+    content: string;
+    name?: string;
+  }>;
+  sources: string[];
+  summary: string;
+}
+
+export interface CreateConversationParams {
+  summary: string;
+  sources: string[];
+  members: string[];
+}
+
+export interface AddMessageParams {
+  role: string;
+  content: string;
 }
