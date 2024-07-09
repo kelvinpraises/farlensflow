@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 export function ellipsisAddress(address: string, length = 4) {
   return `${address.substring(0, 2 + length)}...${address.substring(
     address.length - length,
-    address.length
+    address.length,
   )}`;
 }
 
@@ -69,3 +69,12 @@ export function getHostname(url: string): string | null {
 }
 
 export const isDevelopment = process.env.NODE_ENV === "development";
+
+export function isValidUrl(url: string) {
+  try {
+    new URL(url);
+    return url;
+  } catch (e) {
+    return false;
+  }
+}
