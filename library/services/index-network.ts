@@ -1,39 +1,8 @@
-// services/indexNetworkService.ts
-
-interface Conversation {
-  id: string;
-  controllerDID: {
-    id: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  members: Array<{ id: string }>;
-  messages: Array<{
-    id: string;
-    controllerDID: {
-      id: string;
-    };
-    createdAt: string;
-    updatedAt: string;
-    deletedAt: string | null;
-    role: string;
-    content: string;
-    name?: string;
-  }>;
-  sources: string[];
-}
-
-interface CreateConversationParams {
-  summary: string;
-  sources: string[];
-  members: string[];
-}
-
-interface AddMessageParams {
-  role: string;
-  content: string;
-}
+import {
+  CreateConversationParams,
+  Conversation,
+  AddMessageParams,
+} from "@/types";
 
 const BASE_URL = "https://index.network/api";
 
@@ -96,6 +65,18 @@ export class IndexNetworkService {
         method: "GET",
       },
     );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get conversation: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getConversations(): Promise<Conversation[]> {
+    const response = await this.fetchWithAuth(`${BASE_URL}/conversations`, {
+      method: "GET",
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to get conversation: ${response.statusText}`);
