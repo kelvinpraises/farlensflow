@@ -46,9 +46,19 @@ const config: Config = {
           "50%": { opacity: "0.5" },
         },
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            p: {
+              marginTop: ".5rem",
+              marginBottom: ".5rem",
+            },
+          },
+        },
+      },
     },
   },
-  plugins: [addVariablesForColors],
+  plugins: [addVariablesForColors, require("@tailwindcss/typography")],
 };
 export default config;
 
