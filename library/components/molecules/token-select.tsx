@@ -15,12 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/atoms/popover";
-
-export type Token = {
-  symbol: string;
-  name: string;
-  address: string;
-};
+import { Token } from "@/types";
 
 interface TokenSelectProps {
   tokens: Token[];
@@ -37,13 +32,13 @@ const TokenSelect = React.memo(
         onSelectToken(token);
         setOpen(false);
       },
-      [onSelectToken]
+      [onSelectToken],
     );
 
     const memoizedTokens = useMemo(() => tokens || [], [tokens]);
 
     return (
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover modal open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -82,7 +77,7 @@ const TokenSelect = React.memo(
         </PopoverContent>
       </Popover>
     );
-  }
+  },
 );
 
 TokenSelect.displayName = "TokenSelect";
