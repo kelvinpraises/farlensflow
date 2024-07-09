@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import Card from "@/components/atoms/card";
+import { isValidUrl } from "@/utils";
 
 type FLowProps = {
   id: string;
@@ -15,11 +16,11 @@ const FLow = ({ id, name, description, logoUrl }: FLowProps) => (
     <Card className="h-full transition-shadow hover:shadow-md">
       <div className="flex flex-row items-center gap-4">
         <Image
-          src={logoUrl}
+          src={isValidUrl(logoUrl) || `https://avatar.vercel.sh/${id}`}
           alt={`${name} logo`}
           width={48}
           height={48}
-          className="rounded-full"
+          className="aspect-[1] rounded-full h-fit w-fit object-cover"
         />
         <p className="text-lg">{name}</p>
       </div>
