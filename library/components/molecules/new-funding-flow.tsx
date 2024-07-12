@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { useFundingFlows } from "@/hooks/use-funding-flows";
+import useStreamSetup from "@/hooks/use-stream-setup";
 
 import { Button } from "@/components/atoms/button";
 import {
@@ -23,8 +27,8 @@ import {
 } from "@/components/atoms/select";
 import EmojiPicker from "@/components/molecules/emoji-picker";
 import TokenSelect from "@/components/molecules/token-select";
-import { Token } from "@/types";
 import { useAlchemy } from "@/hooks/use-alchemy";
+import { Token } from "@/types";
 
 type TimeUnit = "minutes" | "hours" | "days" | "weeks";
 
@@ -33,20 +37,46 @@ interface NewFundingFlowProps {
   address: string;
 }
 
-const NewFundingFlow = ({ username, address }: NewFundingFlowProps) => {
-  const [_, setEmoji] = useState<string>("");
-  const [token, setToken] = useState<Token | null>(null);
-  const [amount, setAmount] = useState<string>("");
-  const [description, setDescription] = useState("");
-  const [startValue, setStartValue] = useState(1);
-  const [startUnit, setStartUnit] = useState<TimeUnit>("hours");
-  const [endValue, setEndValue] = useState(10);
-  const [endUnit, setEndUnit] = useState<TimeUnit>("minutes");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const NewFundingFlow = ({
+  username,
+  address: _recipientAddress,
+}: NewFundingFlowProps) => {
+  const { flow: conversationId } = useParams();
 
-  const emojiPickerContainerRef = useRef<HTMLDivElement>(null);
+  const [emoji, setEmoji] = useState<string>("");
+  const [token, setToken] = useState<Token | null>(null);
+  const [description, setDescription] = useState("");
+  const [durationValue, setDurationValue] = useState(1);
+  const [durationUnit, setDurationUnit] = useState<TimeUnit>("hours");
 
   const { tokensQuery } = useAlchemy();
+  const {
+    address,
+    allocation,
+    setAllocation,
+    duration,
+    setDuration,
+    recipientAddress,
+    setRecipientAddress,
+    handleCreateFundingFlow,
+    isMinting,
+    isMintProcessing,
+    isApproving,
+    isSettingStream,
+  } = useStreamSetup(token?.address);
+  const { saveFundingFlow } = useFundingFlows(conversationId as string);
+
+  useEffect(() => {
+    // setRecipientAddress(_recipientAddress);
+    setRecipientAddress("0xFAbCB60b5E25e5B09087BBec88C2f79ABC42979C");
+  }, [_recipientAddress, setRecipientAddress]);
+
+  useEffect(() => {
+    const durationMs = getMilliseconds(durationValue, durationUnit);
+    setDuration(Math.floor(durationMs / 1000).toString());
+  }, [durationUnit, durationValue, setDuration]);
+
+  const emojiPickerContainerRef = useRef<HTMLDivElement>(null);
 
   const timeUnits: TimeUnit[] = ["minutes", "hours", "days", "weeks"];
 
@@ -60,90 +90,60 @@ const NewFundingFlow = ({ username, address }: NewFundingFlowProps) => {
     return value * multipliers[unit];
   };
 
-  const getUnixTimestamps = () => {
-    const now = Date.now();
-    const startOffset = getMilliseconds(startValue, startUnit);
-    const endOffset = getMilliseconds(endValue, endUnit);
-
-    const startTimestamp = Math.floor((now + startOffset) / 1000);
-    const endTimestamp = Math.floor((now + startOffset + endOffset) / 1000);
-
-    return { startTimestamp, endTimestamp };
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    // if (!primaryWallet) {
-    //   toast.error("Please connect your wallet first.");
-    //   setIsSubmitting(false);
-    //   return;
-    // }
+    if (!address) {
+      toast.error("Please connect your wallet first.");
+      return;
+    }
 
-    // const connector = primaryWallet?.connector;
-
-    // if (!connector) {
-    //   toast.error("Wallet connector not found.");
-    //   setIsSubmitting(false);
-    //   return;
-    // }
-
-    if (!address || !token || !amount) {
+    if (!recipientAddress || !token || !allocation || !duration) {
       toast.error("Please fill in all required fields.");
-      setIsSubmitting(false);
       return;
     }
 
     try {
-      const { startTimestamp, endTimestamp } = getUnixTimestamps();
+      await handleCreateFundingFlow();
 
-      toast.success("Creating Collective Fund...");
-
-      // Here you would typically call a function to create the collective fund
-      // For example: await createCollectiveFund(address, description, startTimestamp, endTimestamp, selectedMerchants);
-
-      console.log("Fund Details:", {
+      saveFundingFlow({
         address,
+        emojiCodePoint: emoji,
+        token,
         description,
-        startTimestamp,
-        endTimestamp,
+        duration,
+        allocation,
+        recipientAddress,
+        createdAt: new Date().toISOString(),
       });
 
-      toast.success("Collective Fund created successfully!");
+      toast.success("Funding flow created successfully!");
     } catch (error) {
-      console.error("Error creating collective fund:", error);
+      console.error("Error creating funding flow:", error);
       toast.error(
-        `Failed to create collective fund: ${
+        `Failed to create funding flow: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog>
-      <div className="flex justify-end">
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full bg-zinc-800 text-white hover:bg-zinc-700 rounded-lg py-3"
-          >
-            New Funding Flow to @{username}
-          </Button>
-        </DialogTrigger>
-      </div>
-      <DialogContent
-        ref={emojiPickerContainerRef}
-        className="sm:max-w-[425px] bg-white sm:rounded-2xl rounded-2xl"
-      >
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full bg-zinc-800 text-white hover:bg-zinc-700 rounded-lg py-3"
+        >
+          New Funding Flow to @{username}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px] bg-white sm:rounded-2xl rounded-2xl">
         <DialogHeader>
           <DialogTitle>Create a Funding Flow</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-          <div className="space-y-4">
+          <div ref={emojiPickerContainerRef} className="space-y-4">
             <div className="flex flex-col gap-2">
               <Label>General</Label>
               <div className="flex space-x-2 items-center">
@@ -151,25 +151,32 @@ const NewFundingFlow = ({ username, address }: NewFundingFlowProps) => {
                   emojiPickerContainerRef={emojiPickerContainerRef}
                   setSelectedEmoji={setEmoji}
                 />
-
                 <Input
                   type="text"
-                  value={address}
+                  value={recipientAddress}
                   readOnly
-                  placeholder="Fund Name"
+                  placeholder="Recipient Address"
                 />
               </div>
               <div className="flex space-x-2">
                 <TokenSelect
-                  tokens={tokensQuery.data || []}
+                  tokens={
+                    tokensQuery.data || [
+                      {
+                        address: "0x23dB4a08f2272df049a4932a4Cc3A6Dc1002B33E",
+                        symbol: "TT",
+                        name: "Test Token",
+                      },
+                    ]
+                  }
                   selectedToken={token}
                   onSelectToken={setToken}
                 />
                 <Input
                   type="number"
                   min="1"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  value={allocation}
+                  onChange={(e) => setAllocation(e.target.value)}
                   placeholder="Amount"
                 />
               </div>
@@ -187,38 +194,13 @@ const NewFundingFlow = ({ username, address }: NewFundingFlowProps) => {
                 <Input
                   type="number"
                   min="1"
-                  value={startValue}
-                  onChange={(e) => setStartValue(parseInt(e.target.value))}
+                  value={durationValue}
+                  onChange={(e) => setDurationValue(parseInt(e.target.value))}
                   className="w-20"
                 />
                 <Select
-                  value={startUnit}
-                  onValueChange={(value: TimeUnit) => setStartUnit(value)}
-                >
-                  <SelectTrigger className="w-[110px]">
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {timeUnits.map((unit) => (
-                      <SelectItem key={unit} value={unit}>
-                        {unit}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span>from now, it starts</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Input
-                  type="number"
-                  min="1"
-                  value={endValue}
-                  onChange={(e) => setEndValue(parseInt(e.target.value))}
-                  className="w-20"
-                />
-                <Select
-                  value={endUnit}
-                  onValueChange={(value: TimeUnit) => setEndUnit(value)}
+                  value={durationUnit}
+                  onValueChange={(value: TimeUnit) => setDurationUnit(value)}
                 >
                   <SelectTrigger className="w-[110px]">
                     <SelectValue placeholder="Select unit" />
@@ -233,25 +215,29 @@ const NewFundingFlow = ({ username, address }: NewFundingFlowProps) => {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <span>later, it ends</span>
+                <span>from now it ends</span>
               </div>
             </div>
           </div>
           <Button
             type="submit"
             className="w-full bg-zinc-800 text-white hover:bg-zinc-700 rounded-lg py-3"
-            disabled={isSubmitting}
+            disabled={
+              isMinting || isMintProcessing || isApproving || isSettingStream
+            }
           >
-            {isSubmitting ? "Creating Funding Flow..." : "Create Funding Flow"}
+            {isMinting || isMintProcessing
+              ? "Minting Account..."
+              : isApproving
+                ? "Approving Token..."
+                : isSettingStream
+                  ? "Setting Stream..."
+                  : "Create Funding Flow"}
           </Button>
         </form>
       </DialogContent>
     </Dialog>
   );
 };
-
-const tags = Array.from({ length: 10 }).map(
-  (_, i, a) => `v1.2.0-beta.${a.length - i}`,
-);
 
 export default NewFundingFlow;
