@@ -7,8 +7,8 @@ import { Alert, AlertDescription } from "@/components/atoms/alert";
 import { Button } from "@/components/atoms/button";
 import { Separator } from "@/components/atoms/separator";
 import { useDripsManagement } from "@/hooks/use-drips-management";
-import { cn } from "@/utils";
 import { FundingFlowState, Token } from "@/types";
+import { cn } from "@/utils";
 
 const CollectHead = (collect: { token: Token }) => {
   const { optimalReceivableAmount, splittableAmount, collectableAmount } =
@@ -37,7 +37,8 @@ const CollectHead = (collect: { token: Token }) => {
       </div>
       <div className="flex gap-2 p-1 rounded-lg text-gray-700">
         <p className="text-sm w-fit">
-          Total Receivable: {formatEther(totalReceivableAmount)} ETH
+          Total Receivable: {formatEther(totalReceivableAmount)}{" "}
+          {collect.token.symbol}
         </p>
       </div>
     </div>
@@ -69,7 +70,10 @@ const CollectBody = (collect: {
   return (
     <div className="flex flex-col gap-4">
       <Alert variant="destructive">
-        <AlertDescription></AlertDescription>
+        <AlertDescription>
+          Clicking <strong>Collect Funds</strong> batches your receivable,
+          splittable and collectable funds.
+        </AlertDescription>
       </Alert>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -80,20 +84,23 @@ const CollectBody = (collect: {
               {optimalReceivableAmount
                 ? formatEther(optimalReceivableAmount)
                 : "0"}{" "}
-              ETH
+              {collect.token.symbol}
             </p>
             <p>
               Splittable Amount:{" "}
-              {splittableAmount ? formatEther(splittableAmount) : "0"} ETH
+              {splittableAmount ? formatEther(splittableAmount) : "0"}{" "}
+              {collect.token.symbol}
             </p>
             <p>
               Collectable Amount:{" "}
-              {collectableAmount ? formatEther(collectableAmount) : "0"} ETH
+              {collectableAmount ? formatEther(collectableAmount) : "0"}{" "}
+              {collect.token.symbol}
             </p>
           </div>
 
           <p className="text-gray-500 font-bold text-xs">
-            Total Receivable: {formatEther(totalReceivableAmount)} ETH
+            Total Receivable: {formatEther(totalReceivableAmount)}{" "}
+            {collect.token.name}
           </p>
         </div>
         <div className="flex w-full gap-2 items-center">
@@ -124,6 +131,31 @@ const CollectBody = (collect: {
           </Button>
         </div>
       </div>
+      {collect.fundingFlows.map((flow) => {
+        const date = new Date(flow.createdAt);
+        const formattedDate = date.toISOString().slice(0, 19).replace("T", " ");
+        return (
+          <div key={flow.createdAt} className="flex flex-col gap-1">
+            <Separator
+              className=" bg-slate-200 hidden sm:block"
+              orientation="horizontal"
+            />
+            <div className="flex gap-2">
+              {flow.creator && (
+                <p className="text-sm text-gray-600">Creator: {flow.creator}</p>
+              )}
+              <p className="text-sm text-gray-600">
+                Allocation: {flow.allocation} {flow.token?.symbol}
+              </p>
+              <p className="text-sm text-gray-600">
+                Duration: {parseInt(flow.duration) / 60} mins
+              </p>
+            </div>
+            <p className="text-sm text-gray-600">{flow.description}</p>
+            <p className="text-[#4C505F] text-sm italic">{formattedDate}</p>
+          </div>
+        );
+      })}
     </div>
   );
 };
