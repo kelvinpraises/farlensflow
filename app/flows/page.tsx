@@ -50,6 +50,7 @@ const FlowsHome = () => {
     if (conversationsQuery.isPending) {
       return (
         <ErrorState
+          hideAlert
           error={Error("We couldn't get your flows just yet, please sign in!")}
         />
       );
@@ -79,16 +80,24 @@ const LoadingState = () => (
   </div>
 );
 
-const ErrorState = ({ error }: { error: Error }) => (
+const ErrorState = ({
+  error,
+  hideAlert,
+}: {
+  error: Error;
+  hideAlert?: boolean;
+}) => (
   <div className="flex flex-col items-center justify-center h-full gap-4">
-    <Alert variant="destructive">
-      <AlertTriangle className="h-4 w-4" />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>
-        {error.message ||
-          "An error occurred while fetching flows. Please try again later."}
-      </AlertDescription>
-    </Alert>
+    {!hideAlert && (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          {error.message ||
+            "An error occurred while fetching flows. Please try again later."}
+        </AlertDescription>
+      </Alert>
+    )}
     <div className="flex flex-col items-center justify-center">
       <Image
         alt="errors happeneth"
