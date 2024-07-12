@@ -7,6 +7,7 @@ import { Button } from "@/components/atoms/button";
 import Emoji from "@/components/atoms/emoji";
 import { useFundingFlows } from "@/hooks/use-funding-flows";
 import { FundingFlowState } from "@/types";
+import { useAccount } from "wagmi";
 
 const ActiveFundingHead = ({ flow }: { flow: FundingFlowState }) => {
   const { description, emojiCodePoint, token, allocation } = flow;
@@ -39,12 +40,13 @@ const ActiveFundingBody = ({
   index: number;
 }) => {
   const { flow: conversationId } = useParams();
+  const { address } = useAccount();
   const { deleteFundingFlow } = useFundingFlows(conversationId as string);
   const [copySuccess, setCopySuccess] = useState(false);
 
   const handleCopyLink = () => {
     const baseUrl = window.location.origin;
-    const encodedFlow = btoa(JSON.stringify(flow));
+    const encodedFlow = btoa(JSON.stringify({ ...flow, creator: address }));
     const fullUrl = `${baseUrl}/collect?new-flow=${encodedFlow}`;
 
     navigator.clipboard.writeText(fullUrl).then(() => {
@@ -56,7 +58,7 @@ const ActiveFundingBody = ({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="text-sm text-gray-600">To: {flow.recipientAddress}</p>
+        <p className="text-sm text-gray-600">To: {flow.recipient}</p>
         <p className="text-sm text-gray-600">Duration: {flow.duration}</p>
         {flow.description && <p className="text-sm">{flow.description}</p>}
       </div>
