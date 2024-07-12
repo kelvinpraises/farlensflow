@@ -6,10 +6,10 @@ import "@/styles/globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://farlensflow.vercel.app/"),
   title: "Farlensflow",
-  icons: "/farlensflow.png",
+  icons: "/farlensflow-logo.svg",
   description: "",
   openGraph: {
-    images: "", //TODO:
+    images: "/farlensflow.png",
   },
 };
 
