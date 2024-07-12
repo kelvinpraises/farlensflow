@@ -1,12 +1,9 @@
+import { waitForTransactionReceipt } from "@wagmi/core";
 import { useCallback, useState } from "react";
 import { Address, parseUnits } from "viem";
-import {
-  useAccount,
-  useReadContract,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from "wagmi";
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
 
+import { config } from "@/providers/wagmi/config";
 import addressDriver from "@/types/contracts/address-driver";
 import nftDriver from "@/types/contracts/nft-driver";
 
@@ -25,6 +22,16 @@ const ERC20_ABI = [
     ],
     outputs: [{ name: "", type: "bool" }],
     stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "allowance",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
   },
 ] as const;
 
@@ -49,88 +56,23 @@ function createStreamConfig(
   return config;
 }
 
-function useStreamSetup(ERC20_TOKEN_ADDRESS: Address) {
+function useStreamSetup(ERC20_TOKEN_ADDRESS?: Address) {
   const { address } = useAccount();
   const [allocation, setAllocation] = useState("");
   const [duration, setDuration] = useState("");
+  const [isMintProcessing, setIsMintProcessing] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState("");
   const [tokenId, setTokenId] = useState<bigint | null>(null);
-  const [mintTxHash, setMintTxHash] = useState<`0x${string}` | null>(null);
 
-  const { writeContract: writeNFTContract, isPending: isMinting } =
-    useWriteContract();
-
-  const handleMintNFT = async () => {
-    if (!address) return;
-
-    writeNFTContract(
-      {
-        address: NFT_DRIVER_ADDRESS,
-        abi: NFT_DRIVER_ABI,
-        functionName: "mint",
-        args: [address, []],
-      },
-      {
-        onSuccess: (hash) => {
-          console.log("Transaction hash:", hash);
-          setMintTxHash(hash);
-          setTokenId(null);
-        },
-        onError: (error) => {
-          console.error("Error:", error);
-        },
-      },
-    );
-  };
-
-  const { data: mintTransactionReceipt, isLoading: isMintProcessing } =
-    useWaitForTransactionReceipt({
-      hash: mintTxHash!,
-      query: {
-        enabled: !!mintTxHash,
-      },
-    });
-
-  // Update tokenId when mint transaction is confirmed
-  if (mintTransactionReceipt && mintTransactionReceipt.status === "success") {
-    // Extract tokenId from transaction receipt logs
-    const mintEvent = mintTransactionReceipt.logs.find(
-      (log) =>
-        log.address.toLowerCase() === NFT_DRIVER_ADDRESS.toLowerCase() &&
-        log.topics[0] ===
-          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer event topic
-    );
-    if (mintEvent && mintEvent.topics[3] && !tokenId) {
-      const newTokenId = BigInt(mintEvent.topics[3]);
-      setTokenId(newTokenId);
-    }
-  }
-
-  const { writeContract: writeApproveContract, isPending: isApproving } =
-    useWriteContract();
-
-  const handleApproveToken = async () => {
-    if (!ERC20_TOKEN_ADDRESS) throw new Error("Token to send wasn't selected");
-    if (!allocation) return;
-    const allocationBigInt = parseUnits(allocation, 18); // TODO: might not be 18 decimals
-
-    writeApproveContract(
-      {
-        address: ERC20_TOKEN_ADDRESS,
-        abi: ERC20_ABI,
-        functionName: "approve",
-        args: [NFT_DRIVER_ADDRESS, allocationBigInt],
-      },
-      {
-        onSuccess: (hash) => {
-          console.log("Approval transaction hash:", hash);
-        },
-        onError: (error) => {
-          console.error("Approval error:", error);
-        },
-      },
-    );
-  };
+  const { data: currentAllowance } = useReadContract({
+    address: ERC20_TOKEN_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: "allowance",
+    args: [address!, NFT_DRIVER_ADDRESS],
+    query: {
+      enabled: !!address && !!ERC20_TOKEN_ADDRESS,
+    },
+  });
 
   const { data: recipientAccountId } = useReadContract({
     address: ADDRESS_DRIVER_ADDRESS,
@@ -142,6 +84,15 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS: Address) {
         !!recipientAddress && /^0x[a-fA-F0-9]{40}$/.test(recipientAddress),
     },
   });
+
+  const { writeContract: writeNFTContract, isPending: isMinting } =
+    useWriteContract();
+
+  const { writeContract: writeApproveContract, isPending: isApproving } =
+    useWriteContract();
+
+  const { writeContract: writeSetStreamContract, isPending: isSettingStream } =
+    useWriteContract();
 
   const calculateStreamParams = useCallback(() => {
     if (!allocation || !duration || !recipientAccountId) return null;
@@ -163,31 +114,139 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS: Address) {
     };
   }, [allocation, duration, recipientAccountId]);
 
-  const { writeContract: writeSetStreamContract, isPending: isSettingStream } =
-    useWriteContract();
-
-  const handleSetStream = async () => {
+  const handleCreateFundingFlow = async () => {
     if (!ERC20_TOKEN_ADDRESS) throw new Error("Token to send wasn't selected");
-    if (!tokenId || !address) return;
-    const streamParams = calculateStreamParams();
-    if (!streamParams) return;
+    if (!address) throw new Error("Wallet not connected");
 
-    console.log(streamParams.accountId);
+    const allocationBigInt = parseUnits(allocation, 18);
 
-    writeSetStreamContract({
-      address: NFT_DRIVER_ADDRESS,
-      abi: NFT_DRIVER_ABI,
-      functionName: "setStreams",
-      args: [
-        tokenId,
-        ERC20_TOKEN_ADDRESS,
-        [],
-        streamParams.balanceDelta,
-        [{ accountId: streamParams.accountId, config: streamParams.config }],
-        BigInt(0),
-        address,
-      ],
-    });
+    const mintNFT = async (): Promise<bigint> => {
+      if (tokenId) return tokenId;
+
+      return new Promise((resolve, reject) => {
+        writeNFTContract(
+          {
+            address: NFT_DRIVER_ADDRESS,
+            abi: NFT_DRIVER_ABI,
+            functionName: "mint",
+            args: [address, []],
+          },
+          {
+            onSuccess: async (hash) => {
+              console.log("Mint transaction hash:", hash);
+              try {
+                setIsMintProcessing(true);
+                const receipt = await waitForTransactionReceipt(config, {
+                  hash,
+                });
+                if (receipt.status !== "success") {
+                  throw new Error("Minting failed");
+                }
+                const mintEvent = receipt.logs.find(
+                  (log) =>
+                    log.address.toLowerCase() ===
+                      NFT_DRIVER_ADDRESS.toLowerCase() &&
+                    log.topics[0] ===
+                      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                );
+                if (mintEvent && mintEvent.topics[3]) {
+                  const newTokenId = BigInt(mintEvent.topics[3]);
+                  setTokenId(newTokenId);
+                  setIsMintProcessing(false);
+                  resolve(newTokenId);
+                } else {
+                  setIsMintProcessing(false);
+                  reject(
+                    new Error("Failed to extract tokenId from mint event"),
+                  );
+                }
+              } catch (error) {
+                setIsMintProcessing(false);
+                reject(error);
+              }
+            },
+            onError: reject,
+          },
+        );
+      });
+    };
+
+    const approveTokens = async () => {
+      if (currentAllowance || 0 >= allocationBigInt) return;
+      return new Promise((resolve, reject) => {
+        writeApproveContract(
+          {
+            address: ERC20_TOKEN_ADDRESS,
+            abi: ERC20_ABI,
+            functionName: "approve",
+            args: [NFT_DRIVER_ADDRESS, allocationBigInt],
+          },
+          {
+            onSuccess: async (hash) => {
+              console.log("Approve transaction hash:", hash);
+              try {
+                const receipt = await waitForTransactionReceipt(config, {
+                  hash,
+                });
+                if (receipt.status !== "success") {
+                  throw new Error("Token approval failed");
+                }
+                resolve(receipt);
+              } catch (error) {
+                console.error("Error waiting for approval transaction:", error);
+                reject(error);
+              }
+            },
+            onError: (error) => {
+              console.error("Error in approval transaction:", error);
+              reject(error);
+            },
+          },
+        );
+      });
+    };
+
+    const setUpStream = async (tokenId: bigint) => {
+      const streamParams = calculateStreamParams();
+      if (!streamParams) throw new Error("Invalid stream parameters");
+      return new Promise((resolve, reject) => {
+        writeSetStreamContract(
+          {
+            address: NFT_DRIVER_ADDRESS,
+            abi: NFT_DRIVER_ABI,
+            functionName: "setStreams",
+            args: [
+              tokenId,
+              ERC20_TOKEN_ADDRESS,
+              [],
+              streamParams.balanceDelta,
+              [
+                {
+                  accountId: streamParams.accountId,
+                  config: streamParams.config,
+                },
+              ],
+              BigInt(0),
+              address,
+            ],
+          },
+          {
+            onSuccess: resolve,
+            onError: reject,
+          },
+        );
+      });
+    };
+
+    try {
+      const nftTokenId = await mintNFT();
+      await approveTokens();
+      await setUpStream(nftTokenId);
+      console.log("Funding flow created successfully");
+    } catch (error) {
+      console.error("Error in creating funding flow:", error);
+      throw error;
+    }
   };
 
   return {
@@ -199,9 +258,7 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS: Address) {
     recipientAddress,
     setRecipientAddress,
     tokenId,
-    handleMintNFT,
-    handleApproveToken,
-    handleSetStream,
+    handleCreateFundingFlow,
     isMinting,
     isMintProcessing,
     isApproving,
