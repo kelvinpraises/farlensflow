@@ -1,5 +1,6 @@
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useMemo } from "react";
+import Image from "next/image";
 
 import NavGroup from "@/components/molecules/nav-group";
 import { cn } from "@/utils";
@@ -40,7 +41,13 @@ const Header = ({ className }: { className?: string }) => {
       )}
     >
       <div className="w-full">
-        <img src="/senti-dripz-logo.png" alt="" className="w-8 opacity-85" />
+        <Image
+          alt="farlensflow logo"
+          src="/farlensflow-logo.svg"
+          width={48}
+          height={48}
+          className="animate-[spin_12s_linear_infinite]"
+        />
       </div>
       <NavGroup className="flex w-full justify-center" navs={navs} />
       <div className="flex justify-end w-full">
