@@ -1,11 +1,16 @@
 # FarlensFlow
 
-<div align="center" style="animation: spin 12s linear infinite;">
-  <img src="./public/farlensflow-logo.svg" alt="FarlensFlow Logo" width="200" height="200">
-  <style>
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  </style>
+<div align="center">
+  <svg width="200" height="200">
+    <g>
+      <image href="./public/farlensflow-logo.svg" width="200" height="200" x="0" y="0">
+        <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 100 100" to="360 100 100" dur="12s" repeatCount="indefinite"/>
+      </image>
+    </g>
+  </svg>
 </div>
+
+
 
 Interest-based Farcaster funding. Search, match, and start your crypto flows.
 
