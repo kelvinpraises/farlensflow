@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,8 +10,11 @@ import { getUserAddress } from "@/services/farcaster";
 
 const SuggestedFundingHead = (suggestion: {
   content: string;
-  updatedAt?: string;
+  updatedAt: string;
 }) => {
+  const date = new Date(suggestion.updatedAt);
+  const formattedDate = date.toISOString().slice(0, 19).replace("T", " ");
+
   return (
     <div className={"flex items-start flex-col gap-2 w-full"}>
       <Markdown className="prose text-left" remarkPlugins={[remarkGfm]}>
@@ -18,7 +22,7 @@ const SuggestedFundingHead = (suggestion: {
       </Markdown>
       {suggestion.updatedAt && (
         <p className="text-[#4C505F] text-sm italic text-end">
-          {suggestion.updatedAt}
+          {formattedDate}
         </p>
       )}
     </div>
@@ -30,26 +34,21 @@ interface ResolvedUser {
   address: string;
 }
 
-const SuggestedFundingBody = (suggestion: {
-  content?: string;
-  updatedAt?: string;
-}) => {
+const SuggestedFundingBody = (suggestion: { content?: string }) => {
   const [resolvedUsers, setResolvedUsers] = useState<ResolvedUser[]>([]);
-  const [debugInfo, setDebugInfo] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const resolveAddresses = async () => {
-      setDebugInfo(`Suggestion received: ${JSON.stringify(suggestion)}`);
-
+      setIsLoading(true);
       if (!suggestion?.content) {
-        setDebugInfo((prevInfo) => `${prevInfo}\nNo content in suggestion`);
         setResolvedUsers([]);
+        setIsLoading(false);
         return;
       }
 
-      // const regex = /https:\/\/warpcast\.com\/(\w+)\/([^/\s]+)/g;
-      const regex = /https:\/\/warpcast\.com\/([\w.]+)\/([^\/\s]+)/g;
-
+      const regex =
+        /https:\/\/warpcast\.com\/([\w.]+(?:\.eth)?)(?:\/([^\/\s]+))?/g;
       const usernames: string[] = [];
       let match;
       while ((match = regex.exec(suggestion.content)) !== null) {
@@ -58,10 +57,6 @@ const SuggestedFundingBody = (suggestion: {
         }
       }
 
-      setDebugInfo(
-        (prevInfo) => `${prevInfo}\nUsernames found: ${usernames.join(", ")}`,
-      );
-
       const users = await Promise.all(
         usernames.map(async (username) => {
           try {
@@ -69,10 +64,6 @@ const SuggestedFundingBody = (suggestion: {
             return address ? { username, address } : null;
           } catch (error) {
             console.error(`Error resolving address for ${username}:`, error);
-            setDebugInfo(
-              (prevInfo) =>
-                `${prevInfo}\nError resolving ${username}: ${error}`,
-            );
             return null;
           }
         }),
@@ -82,10 +73,7 @@ const SuggestedFundingBody = (suggestion: {
         (user): user is ResolvedUser => user !== null,
       );
       setResolvedUsers(filteredUsers);
-      setDebugInfo(
-        (prevInfo) =>
-          `${prevInfo}\nResolved users: ${filteredUsers.map((u) => u.username).join(", ")}`,
-      );
+      setIsLoading(false);
     };
 
     resolveAddresses();
@@ -103,12 +91,19 @@ const SuggestedFundingBody = (suggestion: {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-4">
+        <Loader className="animate-spin text-gray-500" size={24} />
+      </div>
+    );
+  }
+
   if (resolvedUsers.length === 0) {
     return (
       <div className="text-gray-500 italic">
         No funds to flow. Please check the suggestion for valid Warpcast
         usernames.
-        {/* <pre className="mt-2 text-xs">{debugInfo}</pre> */}
       </div>
     );
   }
@@ -122,7 +117,6 @@ const SuggestedFundingBody = (suggestion: {
           address={user.address}
         />
       ))}
-      {/* <pre className="mt-2 text-xs">{debugInfo}</pre> */}
     </div>
   );
 };
