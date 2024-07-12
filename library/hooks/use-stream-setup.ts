@@ -60,6 +60,7 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS?: Address) {
   const { address } = useAccount();
   const [allocation, setAllocation] = useState("");
   const [duration, setDuration] = useState("");
+  const [isApprovalProcessing, setIsApprovalProcessing] = useState(false);
   const [isMintProcessing, setIsMintProcessing] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState("");
   const [tokenId, setTokenId] = useState<bigint | null>(null);
@@ -152,17 +153,16 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS?: Address) {
                 if (mintEvent && mintEvent.topics[3]) {
                   const newTokenId = BigInt(mintEvent.topics[3]);
                   setTokenId(newTokenId);
-                  setIsMintProcessing(false);
                   resolve(newTokenId);
                 } else {
-                  setIsMintProcessing(false);
                   reject(
                     new Error("Failed to extract tokenId from mint event"),
                   );
                 }
               } catch (error) {
-                setIsMintProcessing(false);
                 reject(error);
+              } finally {
+                setIsMintProcessing(false);
               }
             },
             onError: reject,
@@ -185,6 +185,7 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS?: Address) {
             onSuccess: async (hash) => {
               console.log("Approve transaction hash:", hash);
               try {
+                setIsApprovalProcessing(true);
                 const receipt = await waitForTransactionReceipt(config, {
                   hash,
                 });
@@ -195,6 +196,8 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS?: Address) {
               } catch (error) {
                 console.error("Error waiting for approval transaction:", error);
                 reject(error);
+              } finally {
+                setIsApprovalProcessing(false);
               }
             },
             onError: (error) => {
@@ -262,6 +265,7 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS?: Address) {
     isMinting,
     isMintProcessing,
     isApproving,
+    isApprovalProcessing,
     isSettingStream,
   };
 }

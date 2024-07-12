@@ -48,6 +48,7 @@ const NewFundingFlow = ({
   const [description, setDescription] = useState("");
   const [durationValue, setDurationValue] = useState(1);
   const [durationUnit, setDurationUnit] = useState<TimeUnit>("hours");
+  const [open, setOpen] = useState(false);
 
   const { tokensQuery } = useAlchemy();
   const {
@@ -62,6 +63,7 @@ const NewFundingFlow = ({
     isMinting,
     isMintProcessing,
     isApproving,
+    isApprovalProcessing,
     isSettingStream,
   } = useStreamSetup(token?.address);
   const { saveFundingFlow } = useFundingFlows(conversationId as string);
@@ -118,6 +120,8 @@ const NewFundingFlow = ({
       });
 
       toast.success("Funding flow created successfully!");
+
+      setOpen(false);
     } catch (error) {
       console.error("Error creating funding flow:", error);
       toast.error(
@@ -129,7 +133,7 @@ const NewFundingFlow = ({
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -223,12 +227,16 @@ const NewFundingFlow = ({
             type="submit"
             className="w-full bg-zinc-800 text-white hover:bg-zinc-700 rounded-lg py-3"
             disabled={
-              isMinting || isMintProcessing || isApproving || isSettingStream
+              isMinting ||
+              isMintProcessing ||
+              isApproving ||
+              isApprovalProcessing ||
+              isSettingStream
             }
           >
             {isMinting || isMintProcessing
               ? "Minting Account..."
-              : isApproving
+              : isApproving || isApprovalProcessing
                 ? "Approving Token..."
                 : isSettingStream
                   ? "Setting Stream..."
