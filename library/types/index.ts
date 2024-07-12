@@ -14,7 +14,7 @@ export interface CustomSIWEConfig extends Omit<SIWEConfig, "getSession"> {
 export type Token = {
   symbol: string;
   name: string;
-  address: string;
+  address: Address;
   amount?: string;
 };
 
@@ -94,4 +94,15 @@ export interface CreateConversationParams {
 export interface AddMessageParams {
   role: string;
   content: string;
+}
+
+export interface FundingFlowState {
+  address: string;
+  emojiCodePoint: string;
+  token: Token | null;
+  description: string;
+  duration: string;
+  allocation: string;
+  recipientAddress: string;
+  createdAt: string;
 }
