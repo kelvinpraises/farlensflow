@@ -2,8 +2,9 @@
 
 import { AlertTriangle, Loader } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -16,9 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/atoms/alert";
 import Card from "@/components/atoms/card";
 import { CollectBody, CollectHead } from "@/components/molecules/collect";
 import GlassContainer from "@/components/molecules/glass-container";
-import NewFlow from "@/components/molecules/new-flow";
 import { FundingFlowState, Token } from "@/types";
-import Link from "next/link";
 
 type GroupedFlows = {
   token: Token;
@@ -130,38 +129,10 @@ const CollectHome = () => {
     if (groupedFlows.length === 0) {
       return <EmptyState />;
     }
-    return (
-      <>
-        <NewFlow />
-        <CollectFlows groupedFlows={groupedFlows} />
-      </>
-    );
+    return <CollectFlows groupedFlows={groupedFlows} />;
   };
 
-  return (
-    <GlassContainer>
-      <header>
-        <h1 className="pt-4 px-4 font-semibold text-xl">Collect</h1>
-        <p className="px-4 pb-2 text-sm text-gray-700">
-          Collect and view funding flow details
-        </p>
-      </header>
-      <main className="rounded-2xl bg-[#F8F8F7] p-4 flex-1 flex flex-col gap-4">
-        <Alert>
-          <AlertTitle>Heads up!</AlertTitle>
-          <AlertDescription>
-            Have anyone on the{" "}
-            <Link href="/flows" className="text-[#F26DB7] hover:underline">
-              Flows
-            </Link>{" "}
-            page send you flows and its link to start collecting
-          </AlertDescription>
-        </Alert>
-
-        {renderContent()}
-      </main>
-    </GlassContainer>
-  );
+  return renderContent();
 };
 
 const LoadingState = () => (
@@ -231,4 +202,32 @@ const CollectFlows = ({ groupedFlows }: { groupedFlows: GroupedFlows[] }) => (
   </Accordion>
 );
 
-export default CollectHome;
+const CollectHomeWithSuspense = () => {
+  return (
+    <GlassContainer>
+      <header>
+        <h1 className="pt-4 px-4 font-semibold text-xl">Collect</h1>
+        <p className="px-4 pb-2 text-sm text-gray-700">
+          Collect and view funding flow details
+        </p>
+      </header>
+      <main className="rounded-2xl bg-[#F8F8F7] p-4 flex-1 flex flex-col gap-4">
+        <Alert>
+          <AlertTitle>Heads up!</AlertTitle>
+          <AlertDescription>
+            Have anyone on the{" "}
+            <Link href="/flows" className="text-[#F26DB7] hover:underline">
+              Flows
+            </Link>{" "}
+            page send you flows and its link to start collecting
+          </AlertDescription>
+        </Alert>
+        <Suspense fallback={<LoadingState />}>
+          <CollectHome />
+        </Suspense>
+      </main>
+    </GlassContainer>
+  );
+};
+
+export default CollectHomeWithSuspense;
