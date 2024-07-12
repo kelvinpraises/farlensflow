@@ -4,6 +4,7 @@ import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Address } from "viem";
 
 import NewFundingFlow from "@/components/molecules/new-funding-flow";
 import { getUserAddress } from "@/services/farcaster";
@@ -31,7 +32,7 @@ const SuggestedFundingHead = (suggestion: {
 
 interface ResolvedUser {
   username: string;
-  address: string;
+  address: Address;
 }
 
 const SuggestedFundingBody = (suggestion: { content?: string }) => {

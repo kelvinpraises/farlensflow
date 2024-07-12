@@ -62,7 +62,7 @@ function useStreamSetup(ERC20_TOKEN_ADDRESS?: Address) {
   const [duration, setDuration] = useState("");
   const [isApprovalProcessing, setIsApprovalProcessing] = useState(false);
   const [isMintProcessing, setIsMintProcessing] = useState(false);
-  const [recipientAddress, setRecipientAddress] = useState("");
+  const [recipientAddress, setRecipientAddress] = useState<Address>();
   const [tokenId, setTokenId] = useState<bigint | null>(null);
 
   const { data: currentAllowance } = useReadContract({

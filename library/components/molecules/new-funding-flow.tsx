@@ -3,9 +3,7 @@
 import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-
-import { useFundingFlows } from "@/hooks/use-funding-flows";
-import useStreamSetup from "@/hooks/use-stream-setup";
+import { Address } from "viem";
 
 import { Button } from "@/components/atoms/button";
 import {
@@ -28,13 +26,15 @@ import {
 import EmojiPicker from "@/components/molecules/emoji-picker";
 import TokenSelect from "@/components/molecules/token-select";
 import { useAlchemy } from "@/hooks/use-alchemy";
+import { useFundingFlows } from "@/hooks/use-funding-flows";
+import useStreamSetup from "@/hooks/use-stream-setup";
 import { Token } from "@/types";
 
 type TimeUnit = "minutes" | "hours" | "days" | "weeks";
 
 interface NewFundingFlowProps {
   username: string;
-  address: string;
+  address: Address;
 }
 
 const NewFundingFlow = ({
@@ -69,8 +69,8 @@ const NewFundingFlow = ({
   const { saveFundingFlow } = useFundingFlows(conversationId as string);
 
   useEffect(() => {
-    // setRecipientAddress(_recipientAddress);
-    setRecipientAddress("0xFAbCB60b5E25e5B09087BBec88C2f79ABC42979C");
+    setRecipientAddress(_recipientAddress);
+    // setRecipientAddress("0xFAbCB60b5E25e5B09087BBec88C2f79ABC42979C");
   }, [_recipientAddress, setRecipientAddress]);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ const NewFundingFlow = ({
         description,
         duration,
         allocation,
-        recipientAddress,
+        recipient: recipientAddress,
         createdAt: new Date().toISOString(),
       });
 
