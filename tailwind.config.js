@@ -1,7 +1,6 @@
-import type { Config } from "tailwindcss";
 import { default as flattenColorPalette } from "tailwindcss/lib/util/flattenColorPalette";
 
-const config: Config = {
+module.exports = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./library/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -20,19 +19,19 @@ const config: Config = {
         "animate-pulse": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
       keyframes: {
-        // aurora: {
-        //   from: {
-        //     backgroundPosition: "50% 50%, 50% 50%",
-        //   },
-        //   to: {
-        //     backgroundPosition: "350% 50%, 350% 50%",
-        //   },
-        // },
-        // scroll: {
-        //   to: {
-        //     transform: "translate(calc(-50% - 0.5rem))",
-        //   },
-        // },
+        aurora: {
+          from: {
+            backgroundPosition: "50% 50%, 50% 50%",
+          },
+          to: {
+            backgroundPosition: "350% 50%, 350% 50%",
+          },
+        },
+        scroll: {
+          to: {
+            transform: "translate(calc(-50% - 0.5rem))",
+          },
+        },
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -60,10 +59,9 @@ const config: Config = {
   },
   plugins: [addVariablesForColors, require("@tailwindcss/typography")],
 };
-export default config;
 
 // This plugin adds each Tailwind color as a global CSS variable, e.g. var(--gray-200).
-function addVariablesForColors({ addBase, theme }: any) {
+function addVariablesForColors({ addBase, theme }) {
   let allColors = flattenColorPalette(theme("colors"));
   let newVars = Object.fromEntries(
     Object.entries(allColors).map(([key, val]) => [`--${key}`, val]),
