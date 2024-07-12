@@ -51,7 +51,10 @@ export const useIndexNetwork = (conversationId?: string) => {
 
       if (cachedConversation) {
         // If found in cache, check if we need more details
-        if (cachedConversation.messages) {
+        if (
+          cachedConversation.messages &&
+          cachedConversation.messages.length > 1
+        ) {
           return cachedConversation;
         }
         // If we need more details, fetch them but start with cached data
