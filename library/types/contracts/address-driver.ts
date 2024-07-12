@@ -1,6 +1,6 @@
 const data = {
   name: "AddressDriver",
-  address: "0xbb5799E5558406F892073850bb2BdCaE1303B5d0",
+  address: "0x9bd5650dED71ffBd113070f8A3Aa69130c9Afb77",
   abi: [
     {
       type: "function",
