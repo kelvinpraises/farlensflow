@@ -103,6 +103,7 @@ export interface FundingFlowState {
   description: string;
   duration: string;
   allocation: string;
-  recipientAddress: string;
+  recipient: Address;
+  creator?: Address;
   createdAt: string;
 }
