@@ -1,11 +1,9 @@
-import { useCallback, useState, useEffect } from "react";
+import { readContract, waitForTransactionReceipt } from "@wagmi/core";
+import { useCallback, useEffect, useState } from "react";
 import { Address } from "viem";
-import {
-  useAccount,
-  useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-} from "wagmi";
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
+
+import { config } from "@/providers/wagmi/config";
 import addressDriver from "@/types/contracts/address-driver";
 import drips from "@/types/contracts/drips";
 
@@ -17,16 +15,73 @@ const ADDRESS_DRIVER_ABI = addressDriver.abi;
 
 const MAX_CYCLES = 1000; // Adjust as needed
 
+async function findOptimalCycles(
+  accountId: bigint,
+  erc20TokenAddress: Address,
+  maxCycles: number,
+) {
+  let left = 0;
+  let right = maxCycles;
+  let minNonZeroCycle = -1;
+  let maxReceivableCycle = -1;
+  let maxReceivableAmount = BigInt(0);
+
+  // Binary search to find the minimum non-zero cycle
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    const receivable = await readContract(config, {
+      address: DRIPS_ADDRESS,
+      abi: DRIPS_ABI,
+      functionName: "receiveStreamsResult",
+      args: [accountId, erc20TokenAddress, mid],
+    });
+
+    if (receivable > BigInt(0)) {
+      minNonZeroCycle = mid;
+      right = mid - 1;
+    } else {
+      left = mid + 1;
+    }
+  }
+
+  // If no non-zero cycle found, return null
+  if (minNonZeroCycle === -1) return null;
+
+  // Find the maximum receivable cycle
+  left = minNonZeroCycle;
+  right = maxCycles;
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    const receivable = await readContract(config, {
+      address: DRIPS_ADDRESS,
+      abi: DRIPS_ABI,
+      functionName: "receiveStreamsResult",
+      args: [accountId, erc20TokenAddress, mid],
+    });
+
+    if (receivable > maxReceivableAmount) {
+      maxReceivableCycle = mid;
+      maxReceivableAmount = receivable;
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+
+  return { minNonZeroCycle, maxReceivableCycle, maxReceivableAmount };
+}
+
 export function useDripsManagement(erc20TokenAddress: Address) {
   const { address } = useAccount();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [receiveStreamsTxHash, setReceiveStreamsTxHash] = useState<
-    `0x${string}` | null
+  const [isReceiveStreamsProcessing, setIsReceiveStreamsProcessing] =
+    useState(false);
+  const [isSplitProcessing, setIsSplitProcessing] = useState(false);
+  const [isCollectProcessing, setIsCollectProcessing] = useState(false);
+
+  const [optimalReceivableAmount, setOptimalReceivableAmount] = useState<
+    bigint | null
   >(null);
-  const [splitTxHash, setSplitTxHash] = useState<`0x${string}` | null>(null);
-  const [collectTxHash, setCollectTxHash] = useState<`0x${string}` | null>(
-    null,
-  );
 
   const { data: accountId } = useReadContract({
     address: ADDRESS_DRIVER_ADDRESS,
@@ -38,8 +93,6 @@ export function useDripsManagement(erc20TokenAddress: Address) {
     },
   });
 
-  console.log("accountId: ", address);
-
   const { data: cycles } = useReadContract({
     address: DRIPS_ADDRESS,
     abi: DRIPS_ABI,
@@ -50,53 +103,79 @@ export function useDripsManagement(erc20TokenAddress: Address) {
     },
   });
 
-  const { data: splittableAmount } = useReadContract({
-    address: DRIPS_ADDRESS,
-    abi: DRIPS_ABI,
-    functionName: "splittable",
-    args: [accountId || BigInt(0), erc20TokenAddress],
-    query: {
-      enabled: !!accountId,
-    },
-  });
+  const calculateOptimalReceivableAmount = useCallback(async () => {
+    if (!accountId || !cycles || cycles <= 0) {
+      setOptimalReceivableAmount(null);
+      return;
+    }
 
-  const { data: collectableAmount } = useReadContract({
-    address: DRIPS_ADDRESS,
-    abi: DRIPS_ABI,
-    functionName: "collectable",
-    args: [accountId || BigInt(0), erc20TokenAddress],
-    query: {
-      enabled: !!accountId,
-    },
-  });
+    try {
+      const optimalCycles = await findOptimalCycles(
+        accountId,
+        erc20TokenAddress,
+        MAX_CYCLES,
+      );
 
-  const { writeContract: writeReceiveStreams } = useWriteContract();
-  const { writeContract: writeSplit } = useWriteContract();
-  const { writeContract: writeCollect } = useWriteContract();
+      if (optimalCycles) {
+        setOptimalReceivableAmount(optimalCycles.maxReceivableAmount);
+      } else {
+        setOptimalReceivableAmount(null);
+      }
+    } catch (error) {
+      console.error("Error calculating optimal receivable amount:", error);
+      setOptimalReceivableAmount(null);
+    }
+  }, [accountId, cycles, erc20TokenAddress]);
 
-  const { isLoading: isReceiveStreamsProcessing } =
-    useWaitForTransactionReceipt({
-      hash: receiveStreamsTxHash!,
-      query: { enabled: !!receiveStreamsTxHash },
+  useEffect(() => {
+    calculateOptimalReceivableAmount();
+  }, [calculateOptimalReceivableAmount]);
+
+  const { data: splittableAmount, refetch: refetchSplittableAmount } =
+    useReadContract({
+      address: DRIPS_ADDRESS,
+      abi: DRIPS_ABI,
+      functionName: "splittable",
+      args: [accountId || BigInt(0), erc20TokenAddress],
+      query: {
+        enabled: !!accountId,
+      },
     });
 
-  const { isLoading: isSplitProcessing } = useWaitForTransactionReceipt({
-    hash: splitTxHash!,
-    query: { enabled: !!splitTxHash },
-  });
+  const { data: collectableAmount, refetch: refetchCollectableAmount } =
+    useReadContract({
+      address: DRIPS_ADDRESS,
+      abi: DRIPS_ABI,
+      functionName: "collectable",
+      args: [accountId || BigInt(0), erc20TokenAddress],
+      query: {
+        enabled: !!accountId,
+      },
+    });
 
-  const { isLoading: isCollectProcessing } = useWaitForTransactionReceipt({
-    hash: collectTxHash!,
-    query: { enabled: !!collectTxHash },
-  });
+  const { writeContract: writeReceiveStreams, isPending: isReceiving } =
+    useWriteContract();
+  const { writeContract: writeSplit, isPending: isSpliting } =
+    useWriteContract();
+  const { writeContract: writeCollect, isPending: isCollecting } =
+    useWriteContract();
 
   const handleReceiveAndCollect = useCallback(async () => {
     if (!accountId || !address) return;
-    setIsProcessing(true);
 
-    try {
-      // Step 1: Receive streams
-      if (cycles && cycles > 0) {
+    const receiveStreams = async (): Promise<void> => {
+      if (!cycles || cycles <= 0) return;
+      setIsReceiveStreamsProcessing(true);
+      const optimalCycles = await findOptimalCycles(
+        accountId,
+        erc20TokenAddress,
+        MAX_CYCLES,
+      );
+      if (!optimalCycles) {
+        return setIsReceiveStreamsProcessing(false);
+      }
+
+      return new Promise((resolve, reject) => {
         writeReceiveStreams(
           {
             address: DRIPS_ADDRESS,
@@ -105,23 +184,46 @@ export function useDripsManagement(erc20TokenAddress: Address) {
             args: [
               accountId,
               erc20TokenAddress,
-              Math.min(Number(cycles), MAX_CYCLES),
+              optimalCycles.maxReceivableCycle,
             ],
           },
           {
-            onSuccess: (hash) => {
+            onSuccess: async (hash) => {
               console.log("Receive streams transaction hash:", hash);
-              setReceiveStreamsTxHash(hash);
+              try {
+                const receipt = await waitForTransactionReceipt(config, {
+                  hash,
+                });
+                if (receipt.status !== "success") {
+                  throw new Error("Receive streams failed");
+                }
+                setOptimalReceivableAmount(BigInt(0));
+                resolve();
+              } catch (error) {
+                reject(error);
+              } finally {
+                setIsReceiveStreamsProcessing(false);
+              }
             },
             onError: (error) => {
-              console.error("Error receiving streams:", error);
+              setIsReceiveStreamsProcessing(false);
+              reject(error);
             },
           },
         );
+      });
+    };
+
+    const splitFunds = async (): Promise<void> => {
+      const latestSplittableAmount = await refetchSplittableAmount().then(
+        (result) => result.data,
+      );
+
+      if (!latestSplittableAmount || latestSplittableAmount <= BigInt(0)) {
+        return;
       }
 
-      // Step 2: Split if necessary
-      if (splittableAmount && splittableAmount > BigInt(0)) {
+      return new Promise((resolve, reject) => {
         writeSplit(
           {
             address: DRIPS_ADDRESS,
@@ -130,19 +232,40 @@ export function useDripsManagement(erc20TokenAddress: Address) {
             args: [accountId, erc20TokenAddress, []],
           },
           {
-            onSuccess: (hash) => {
+            onSuccess: async (hash) => {
               console.log("Split transaction hash:", hash);
-              setSplitTxHash(hash);
+              try {
+                setIsSplitProcessing(true);
+                const receipt = await waitForTransactionReceipt(config, {
+                  hash,
+                });
+                if (receipt.status !== "success") {
+                  throw new Error("Split failed");
+                }
+                await refetchSplittableAmount();
+                resolve();
+              } catch (error) {
+                reject(error);
+              } finally {
+                setIsSplitProcessing(false);
+              }
             },
-            onError: (error) => {
-              console.error("Error splitting:", error);
-            },
+            onError: reject,
           },
         );
+      });
+    };
+
+    const collectFunds = async (): Promise<void> => {
+      const latestCollectableAmount = await refetchCollectableAmount().then(
+        (result) => result.data,
+      );
+
+      if (!latestCollectableAmount || latestCollectableAmount <= BigInt(0)) {
+        return;
       }
 
-      // Step 3: Collect
-      if (collectableAmount && collectableAmount > BigInt(0)) {
+      return new Promise((resolve, reject) => {
         writeCollect(
           {
             address: ADDRESS_DRIVER_ADDRESS,
@@ -151,42 +274,62 @@ export function useDripsManagement(erc20TokenAddress: Address) {
             args: [erc20TokenAddress, address],
           },
           {
-            onSuccess: (hash) => {
+            onSuccess: async (hash) => {
               console.log("Collect transaction hash:", hash);
-              setCollectTxHash(hash);
+              try {
+                setIsCollectProcessing(true);
+                const receipt = await waitForTransactionReceipt(config, {
+                  hash,
+                });
+                if (receipt.status !== "success") {
+                  throw new Error("Collect failed");
+                }
+                await refetchCollectableAmount();
+                resolve();
+              } catch (error) {
+                reject(error);
+              } finally {
+                setIsCollectProcessing(false);
+              }
             },
-            onError: (error) => {
-              console.error("Error collecting:", error);
-            },
+            onError: reject,
           },
         );
-      }
+      });
+    };
+
+    try {
+      await receiveStreams();
+      await splitFunds();
+      await collectFunds();
+      console.log("All operations completed successfully");
     } catch (error) {
       console.error("Error managing drips:", error);
-    } finally {
-      setIsProcessing(false);
     }
   }, [
     accountId,
     address,
     cycles,
-    splittableAmount,
-    collectableAmount,
     erc20TokenAddress,
     writeReceiveStreams,
+    refetchSplittableAmount,
     writeSplit,
+    refetchCollectableAmount,
     writeCollect,
   ]);
-
-  const isAnyTxProcessing =
-    isReceiveStreamsProcessing || isSplitProcessing || isCollectProcessing;
 
   return {
     accountId,
     cycles,
     splittableAmount,
     collectableAmount,
+    optimalReceivableAmount,
     handleReceiveAndCollect,
-    isProcessing: isProcessing || isAnyTxProcessing,
+    isReceiving,
+    isReceiveStreamsProcessing,
+    isSpliting,
+    isSplitProcessing,
+    isCollecting,
+    isCollectProcessing,
   };
 }
