@@ -1,7 +1,7 @@
-import { waitForTransactionReceipt } from "@wagmi/core";
 import { useCallback, useState } from "react";
 import { Address, parseUnits } from "viem";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { waitForTransactionReceipt } from "wagmi/actions";
 
 import { config } from "@/providers/wagmi/config";
 import addressDriver from "@/types/contracts/address-driver";

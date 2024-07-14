@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAccount } from "wagmi";
 
 import { createAlchemyService } from "@/services/alchemy";
 import { Token } from "@/types";
-import { useAccount } from "wagmi";
 
 export const useAlchemy = () => {
   const account = useAccount();

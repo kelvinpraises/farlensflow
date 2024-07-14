@@ -4,12 +4,11 @@ import { useModal, useSIWE } from "connectkit";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 
-// import { createUser } from "@/library/services/backendAPI";
 import { Button } from "@/components/atoms/button";
+import { SESSION_KEY } from "@/providers/siwe";
 import { useStore } from "@/store/useStore";
 import { SIWESession } from "@/types";
 import { ellipsisAddress } from "@/utils";
-import { SESSION_KEY } from "@/providers/siwe";
 
 const CustomSIWEButton = () => {
   const [isClient, setIsClient] = useState(false);
