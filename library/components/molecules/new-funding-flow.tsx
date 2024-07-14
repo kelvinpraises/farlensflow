@@ -165,12 +165,13 @@ const NewFundingFlow = ({
               <div className="flex space-x-2">
                 <TokenSelect
                   tokens={
-                    tokensQuery.data || [
-                      {
-                        address: "0x23dB4a08f2272df049a4932a4Cc3A6Dc1002B33E",
-                        symbol: "TT",
-                        name: "Test Token",
-                      },
+                    tokensQuery.data ||
+                    [
+                      // {
+                      //   address: "0x23dB4a08f2272df049a4932a4Cc3A6Dc1002B33E",
+                      //   symbol: "TT",
+                      //   name: "Test Token",
+                      // },
                     ]
                   }
                   selectedToken={token}
