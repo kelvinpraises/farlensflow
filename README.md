@@ -51,6 +51,20 @@ FarlensFlow's technical architecture leverages **Index Network** for decentraliz
 
 I welcome contributions from the community!
 
+## Credits
+
+FarlensFlow wouldn't be possible without the awesome open source ecosystem:
+
+- [Index Network](https://index.network): Autonomous discovery experiences across the web
+- [Ceramic Network](https://ceramic.network): For data storage and identity management
+- [Radix UI & shadcn/ui ](https://www.radix-ui.com): Unstyled, accessible components for building high‑quality design systems
+- [Tanstack Query](https://tanstack.com/query/latest): Powerful asynchronous state management for TS/JS
+- [Lucide](https://lucide.dev): Beautiful & consistent icon toolkit
+- [ConnectKit](https://docs.family.co/connectkit): Connecting users to web3 has never been easier
+- [Wagmi](https://wagmi.sh): React Hooks for Ethereum
+- [Viem](https://viem.sh): TypeScript Interface for Ethereum
+
+
 ## License
 
 FarlensFlow is released under the [MIT License](LICENSE).
