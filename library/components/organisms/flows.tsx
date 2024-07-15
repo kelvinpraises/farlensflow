@@ -20,7 +20,7 @@ const FLow = ({ id, name, description, logoUrl }: FLowProps) => (
           alt={`${name} logo`}
           width={48}
           height={48}
-          className="aspect-[1] rounded-full h-fit w-fit object-cover"
+          className="aspect-[1] rounded-full object-cover"
         />
         <p className="text-lg">{name}</p>
       </div>
