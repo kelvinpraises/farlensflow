@@ -2,11 +2,14 @@
 
 import { Cacao, SiweMessage } from "@didtools/cacao";
 import { randomBytes, randomString } from "@stablelib/random";
+import { useQueryClient } from "@tanstack/react-query";
 import { SIWEConfig, SIWEProvider as _SIWEProvider } from "connectkit";
 import { DIDSession, createDIDCacao, createDIDKey } from "did-session";
 import React from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
+import { useStore } from "@/store/useStore";
 import { CustomSIWEConfig, SIWESession } from "@/types";
 
 export const SESSION_KEY = "did";
@@ -90,8 +93,26 @@ const siweConfig: CustomSIWEConfig = {
 };
 
 const SIWEProvider = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = useQueryClient();
+  const setDid = useStore((store) => store.setDid);
+  const router = useRouter();
+
   return (
-    <_SIWEProvider {...(siweConfig as SIWEConfig)}>{children}</_SIWEProvider>
+    <_SIWEProvider
+      {...(siweConfig as SIWEConfig)}
+      onSignIn={(session?: SIWESession) => {
+        if (!session?.did) return;
+        const { did } = session;
+        setDid(did);
+        queryClient.refetchQueries({ queryKey: ["conversation"] });
+      }}
+      onSignOut={() => {
+        setDid("");
+        router.push("/");
+      }}
+    >
+      {children}
+    </_SIWEProvider>
   );
 };
 

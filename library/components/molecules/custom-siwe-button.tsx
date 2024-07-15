@@ -22,14 +22,7 @@ const CustomSIWEButton = () => {
   }, []);
 
   const { data, isReady, isRejected, isLoading, isSignedIn, signOut, signIn } =
-    useSIWE({
-      onSignIn: (session?: SIWESession) => {
-        if (!session?.did) return;
-        const { did } = session;
-        setDid(did);
-      },
-      onSignOut: () => {},
-    });
+    useSIWE();
 
   useEffect(() => {
     (async () => {
