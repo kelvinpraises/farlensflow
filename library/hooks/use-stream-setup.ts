@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Address, parseUnits } from "viem";
+import { Address, erc20Abi as ERC20_ABI, parseUnits } from "viem";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 
@@ -12,28 +12,6 @@ const ADDRESS_DRIVER_ADDRESS = addressDriver.address;
 
 const NFT_DRIVER_ABI = nftDriver.abi;
 const ADDRESS_DRIVER_ABI = addressDriver.abi;
-const ERC20_ABI = [
-  {
-    type: "function",
-    name: "approve",
-    inputs: [
-      { name: "spender", type: "address" },
-      { name: "value", type: "uint256" },
-    ],
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "allowance",
-    inputs: [
-      { name: "owner", type: "address" },
-      { name: "spender", type: "address" },
-    ],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-] as const;
 
 type StreamConfig = bigint;
 
