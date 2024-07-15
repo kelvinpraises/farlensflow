@@ -36,7 +36,7 @@ export const useIndexNetwork = (conversationId?: string) => {
   });
 
   const conversationQuery = useQuery<Conversation, Error>({
-    queryKey: ["conversation", conversationId],
+    queryKey: ["conversation", conversationId, did],
     queryFn: async () => {
       if (!service) throw new Error("DID is empty or undefined");
       if (!conversationId) throw new Error("Conversation ID is undefined");
@@ -65,16 +65,16 @@ export const useIndexNetwork = (conversationId?: string) => {
       // If not in cache, fetch from the service
       return service.getConversation(conversationId);
     },
-    enabled: !!conversationId && !!service,
+    enabled: !!conversationId && !!service && !!did,
   });
 
   const conversationsQuery = useQuery<Conversation[], Error>({
-    queryKey: ["conversations"],
+    queryKey: ["conversations", did],
     queryFn: () => {
       if (!service) throw new Error("DID is empty or undefined");
       return service.getConversations();
     },
-    enabled: !!service,
+    enabled: !!service && !!did,
   });
 
   return {
