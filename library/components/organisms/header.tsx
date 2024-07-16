@@ -1,14 +1,12 @@
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useMemo } from "react";
 import Image from "next/image";
-
 import NavGroup from "@/components/molecules/nav-group";
 import { cn } from "@/utils";
 import CustomSIWEButton from "@/components/molecules/custom-siwe-button";
 
 const Header = ({ className }: { className?: string }) => {
   const segments = useSelectedLayoutSegments();
-
   const navs = useMemo(
     () => [
       {
@@ -34,13 +32,13 @@ const Header = ({ className }: { className?: string }) => {
   );
 
   return (
-    <div
+    <header
       className={cn(
-        "flex justify-between items-center px-8 py-4 min-h-[70px] bg-transparent",
+        "grid grid-cols-[auto_1fr_auto] sm:grid-cols-3 items-center py-2 px-4 sm:py-4 gap-y-4 min-h-[70px] bg-transparent",
         className,
       )}
     >
-      <div className="w-full">
+      <div className="flex items-center">
         <Image
           alt="farlensflow logo"
           src="/farlensflow-logo.svg"
@@ -49,11 +47,16 @@ const Header = ({ className }: { className?: string }) => {
           className="animate-[spin_12s_linear_infinite]"
         />
       </div>
-      <NavGroup className="flex w-full justify-center" navs={navs} />
-      <div className="flex justify-end w-full">
+
+      <NavGroup
+        className="col-span-3 sm:col-span-1 order-last sm:order-none flex justify-center gap-4"
+        navs={navs}
+      />
+
+      <div className="flex justify-end">
         <CustomSIWEButton />
       </div>
-    </div>
+    </header>
   );
 };
 
