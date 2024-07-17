@@ -49,10 +49,6 @@ const NewFlow = () => {
         sources: [
           "did:pkh:eip155:1:0x524C889CE68dcaF3830694415EdE91508681D104",
         ],
-        members: [
-          "did:key:z6MkmvBmZitP8GKFrscX1PgpGA7X5Mw3nX1EWcC2Xrx4FST8",
-          "did:key:z6MkmFfvAAMgh2zd6kscS73b6yyJFDNRr8h4EU7AhWnQtcXc",
-        ],
       });
 
       toast.success("Details sent. Waiting for confirmation...");

@@ -88,7 +88,6 @@ export interface Conversation {
 export interface CreateConversationParams {
   summary: string;
   sources: string[];
-  members: string[];
 }
 
 export interface AddMessageParams {
