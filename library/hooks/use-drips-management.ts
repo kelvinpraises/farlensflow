@@ -13,7 +13,7 @@ const ADDRESS_DRIVER_ADDRESS = addressDriver.address;
 const DRIPS_ABI = drips.abi;
 const ADDRESS_DRIVER_ABI = addressDriver.abi;
 
-const MAX_CYCLES = 1000; // Adjust as needed
+const MAX_CYCLES = 7000; // Adjust as needed
 
 async function findOptimalCycles(
   accountId: bigint,
@@ -73,7 +73,10 @@ async function findOptimalCycles(
 }
 
 export function useDripsManagement(erc20TokenAddress: Address) {
-  const { address } = useAccount();
+  // const { address } = useAccount();
+  // alert(address);
+  const address = "0xe219E1106b441c9A8D5E12364e07EEE6e896e199";
+  // const address = "0xB754369b3a7C430d7E94c14f33c097C398a0caa5";
   const [isReceiveStreamsProcessing, setIsReceiveStreamsProcessing] =
     useState(false);
   const [isSplitProcessing, setIsSplitProcessing] = useState(false);
