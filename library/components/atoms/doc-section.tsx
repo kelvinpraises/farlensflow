@@ -1,15 +1,18 @@
 "use client";
 
+import { cn } from "@/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import React, { useState } from "react";
 
 const DocSection = ({
   title,
   open,
+  className,
   children,
 }: {
   title: string;
   open?: boolean;
+  className?: string;
   children: React.ReactNode;
 }) => {
   const [isOpen, setIsOpen] = useState(open ?? false);
@@ -17,7 +20,10 @@ const DocSection = ({
   return (
     <div className="mb-4">
       <button
-        className="flex items-center w-full text-left font-semibold text-lg mb-2"
+        className={cn(
+          "flex items-center w-full text-left text-xl font-black mb-2",
+          className,
+        )}
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? (
