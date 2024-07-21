@@ -1,7 +1,7 @@
 # FarlensFlow
 
 <div align="center">
-  <img src="./public/farlensflow-logo-github.svg" alt="FarlensFlow Logo" width="200" height="200">
+  <img src="./public/farlensflow-logo-spin.svg" alt="FarlensFlow Logo" width="200" height="200">
 </div>
 
 Interest-based Farcaster funding. Search, match, and start your crypto flows.
