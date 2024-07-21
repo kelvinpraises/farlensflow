@@ -170,7 +170,7 @@ const EmptyState = () => (
   <div className="flex flex-col items-center justify-center h-full gap-4">
     <div className="flex flex-col items-center justify-center">
       <Image
-        alt="query intents"
+        alt="empty state"
         src="https://illustrations.popsy.co/red/earning-money.svg"
         width={350}
         height={350}
@@ -216,7 +216,7 @@ const CollectHomeWithSuspense = () => {
           <AlertTitle>Heads up!</AlertTitle>
           <AlertDescription>
             Have anyone on the{" "}
-            <Link href="/flows" className="text-[#F26DB7] hover:underline">
+            <Link href="/flows" className="text-[#FA4A57] hover:underline">
               Flows
             </Link>{" "}
             page send you flows and its link to start collecting

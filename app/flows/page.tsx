@@ -116,7 +116,7 @@ const EmptyState = () => (
   <div className="flex flex-col items-center justify-center h-full gap-4">
     <div className="flex flex-col items-center justify-center">
       <Image
-        alt="query intents"
+        alt="empty state"
         src="https://illustrations.popsy.co/red/flower.svg"
         width={350}
         height={350}
