@@ -1,9 +1,10 @@
+import Image from "next/image";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useMemo } from "react";
-import Image from "next/image";
+
+import CustomSIWEButton from "@/components/molecules/custom-siwe-button";
 import NavGroup from "@/components/molecules/nav-group";
 import { cn } from "@/utils";
-import CustomSIWEButton from "@/components/molecules/custom-siwe-button";
 
 const Header = ({ className }: { className?: string }) => {
   const segments = useSelectedLayoutSegments();
@@ -41,7 +42,7 @@ const Header = ({ className }: { className?: string }) => {
       <div className="flex items-center">
         <Image
           alt="farlensflow logo"
-          src="/farlensflow-logo.svg"
+          src="/farlensflow-logo-spin.svg"
           width={48}
           height={48}
           className="animate-[spin_12s_linear_infinite]"
