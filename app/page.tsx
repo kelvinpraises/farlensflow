@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import DocSection from "@/components/atoms/doc-section";
 import GlassContainer from "@/components/molecules/glass-container";
+import VideoPlayer from "@/components/molecules/video-player";
 import { Checkbox } from "@/components/atoms/checkbox";
 import {
   Table,
@@ -76,7 +77,8 @@ const IntentsHome = async () => {
             </DocSection>
 
             <DocSection className="font-black text-lg" title="Curate Flow" open>
-              <p>TBD</p>
+              {/* <p>TBD</p> */}
+              <VideoPlayer className="mr-4" url={"/curate.mp4"} />
             </DocSection>
 
             <DocSection className="font-black text-lg" title="Fund Flow" open>
@@ -231,6 +233,10 @@ const IntentsHome = async () => {
             </DocSection>
           </DocSection>
           <DocSection title="Demo" className="p-0">
+            {/* <VideoPlayer
+              className="mr-4"
+              url={"https://files.vidstack.io/sprite-fight/720p.mp4"}
+            /> */}
             <p>TBD</p>
           </DocSection>
           <DocSection title="Future Improvements">
